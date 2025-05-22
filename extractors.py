@@ -1,8 +1,10 @@
+from typing import Any, Dict, Optional
 from time import sleep
 import json
 
 
-def add_cookies(driver, cookies_file):
+def add_cookies(driver, cookies_file: str) -> None:
+    """Add cookies from a file to the Selenium driver."""
     try:
         with open(cookies_file, "r") as file:
             cookies = json.load(file)
@@ -12,23 +14,31 @@ def add_cookies(driver, cookies_file):
         print(f"Cookies file '{cookies_file}' not found. Proceeding without cookies.")
 
 
-def get_available_internship_offers(driver, selector):
+def get_available_internship_offers(driver, selector: tuple) -> list:
+    """Return a list of internship offer elements found by the given selector."""
     internship_offers = driver.find_elements(selector[0], selector[1])
     print(f"Found {len(internship_offers)} internship offers")
     return internship_offers
 
 
-def extract_internship_overview(internship, index):
+def extract_internship_overview(
+    internship: Any, index: int
+) -> Optional[Dict[str, Any]]:
+    """Extracts a summary of the internship from a table row element."""
     try:
-        org = internship.find_element("css selector", "td:nth-child(1)").text
-        addr = internship.find_element("css selector", "td[data-title='Adres']").text
-        muni = internship.find_element("css selector", "td[data-title='Gemeente']").text
+        org = internship.find_element("css selector", "td:nth-child(1)").text.strip()
+        addr = internship.find_element(
+            "css selector", "td[data-title='Adres']"
+        ).text.strip()
+        muni = internship.find_element(
+            "css selector", "td[data-title='Gemeente']"
+        ).text.strip()
         title = internship.find_element(
             "css selector", "td[data-title='Titel opdracht']"
-        ).text
+        ).text.strip()
         typ = internship.find_element(
             "css selector", "td[data-title='Type opdracht']"
-        ).text
+        ).text.strip()
         tags = [
             t.strip()
             for t in internship.find_element(
@@ -36,7 +46,6 @@ def extract_internship_overview(internship, index):
             ).text.split("; ")
             if t.strip()
         ]
-
         data = {
             "id": index + 1,
             "organization": org,
@@ -46,7 +55,6 @@ def extract_internship_overview(internship, index):
             "type": typ,
             "tags": tags,
         }
-
         print(
             f"Internship #{index+1}\nOrganization: {org}\nAddress: {addr}\nMunicipality: {muni}\nTitle: {title}\nType: {typ}\nTags: {tags}\n{'-'*30}"
         )
@@ -56,36 +64,40 @@ def extract_internship_overview(internship, index):
         return None
 
 
-def extract_internship_details(driver, internship):
+def extract_internship_details(
+    driver: Any, internship: Any
+) -> Optional[Dict[str, Any]]:
+    """Extracts detailed information about an internship from the modal dialog."""
     try:
         btn = internship.find_element("css selector", "td[data-title='Info'] a")
         btn.click()
         sleep(0.5)
-
         modal = driver.find_element("css selector", ".modal-content")
         # website fallback
         try:
             website = modal.find_element(
                 "xpath",
                 "/html/body/div[1]/form/div[7]/div[10]/div[2]/div/div/div[2]/div[1]/div[3]/div[2]/p/a",
-            ).text
+            ).text.strip()
         except Exception:
             website = modal.find_element(
                 "xpath",
                 "/html/body/div[1]/form/div[7]/div[10]/div[2]/div/div/div[2]/div[1]/div[3]/div[2]/p",
-            ).text
-
-        employees = modal.find_element("xpath", '//*[@id="aantalwerknemers"]').text
-        it_employees = modal.find_element("xpath", '//*[@id="aantalinformatici"]').text
-        contact_name = modal.find_element("xpath", '//*[@id="naam"]').text
-        contact_email = modal.find_element("xpath", '//*[@id="email"]').text
-        contact_gsm = modal.find_element("xpath", '//*[@id="gsm"]').text
-        contact_tel = modal.find_element("xpath", '//*[@id="telefoon"]').text
-        profile = modal.find_element("xpath", '//*[@id="profielStudent"]').text
+            ).text.strip()
+        employees = modal.find_element(
+            "xpath", '//*[@id="aantalwerknemers"]'
+        ).text.strip()
+        it_employees = modal.find_element(
+            "xpath", '//*[@id="aantalinformatici"]'
+        ).text.strip()
+        contact_name = modal.find_element("xpath", '//*[@id="naam"]').text.strip()
+        contact_email = modal.find_element("xpath", '//*[@id="email"]').text.strip()
+        contact_gsm = modal.find_element("xpath", '//*[@id="gsm"]').text.strip()
+        contact_tel = modal.find_element("xpath", '//*[@id="telefoon"]').text.strip()
+        profile = modal.find_element("xpath", '//*[@id="profielStudent"]').text.strip()
         description = modal.find_element(
             "xpath", '//*[@id="omschrijvingStageopdracht"]'
-        ).text
-
+        ).text.strip()
         # documents
         try:
             doc_container = modal.find_element(
@@ -102,7 +114,6 @@ def extract_internship_details(driver, internship):
         except Exception:
             print("Could not extract document information")
             extras = []
-
         data = {
             "website": website,
             "employees_count": employees,
@@ -115,7 +126,6 @@ def extract_internship_details(driver, internship):
             "internship_description": description,
             "extra_documents": extras,
         }
-
         close_btn = driver.find_element(
             "css selector",
             ".modal-lg > div:nth-child(1) > div:nth-child(1) > button:nth-child(1)",
